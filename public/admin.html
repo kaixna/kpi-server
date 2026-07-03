@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员汇总看板</title>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, sans-serif; }
+        body { background: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 28px; padding: 24px; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1); }
+        h1 { color: #1a4d6b; margin-bottom: 8px; }
+        .status-bar { display: flex; gap: 20px; flex-wrap: wrap; margin: 16px 0; padding: 16px; background: #f8fafc; border-radius: 16px; }
+        .stat-item { flex: 1; min-width: 120px; background: white; padding: 12px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .stat-number { font-size: 2rem; font-weight: 800; color: #1a4d6b; }
+        .stat-label { font-size: 0.8rem; color: #666; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th, td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: center; }
+        th { background: #f1f5f9; font-weight: 700; }
+        .grade-A { background: #dcfce7; color: #166534; padding: 2px 10px; border-radius: 40px; display: inline-block; }
+        .grade-B { background: #fef9c3; color: #854d0e; padding: 2px 10px; border-radius: 40px; display: inline-block; }
+        .grade-C { background: #fed7aa; color: #9a3412; padding: 2px 10px; border-radius: 40px; display: inline-block; }
+        .grade-D { background: #fecaca; color: #991b1b; padding: 2px 10px; border-radius: 40px; display: inline-block; }
+        .btn { background: #1a4d6b; border: none; padding: 10px 20px; border-radius: 40px; color: white; cursor: pointer; font-weight: 600; margin: 4px 8px 4px 0; }
+        .btn-success { background: #16a34a; }
+        .btn-outline { background: #eef2ff; color: #1a4d6b; border: 1px solid #cbd5e1; }
+        @media (max-width: 600px) { .stat-item { min-width: 80px; } .stat-number { font-size: 1.5rem; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📊 管理员汇总看板</h1>
+    <p>查看所有员工的提交进度和最终考核结果</p>
+    
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+        <input type="text" id="quarterInput" placeholder="季度名称" value="2025年Q3" style="padding:10px; border-radius:40px; border:1px solid #cbd5e1; font-size:16px;">
+        <button id="loadDataBtn" class="btn btn-success">📊 加载数据</button>
+        <button id="refreshBtn" class="btn btn-outline">🔄 刷新</button>
+        <button id="exportCsvBtn" class="btn btn-outline">📥 导出CSV</button>
+    </div>
+    
+    <div id="statusBar" class="status-bar">
+        <div class="stat-item"><div class="stat-number" id="totalRaters">0</div><div class="stat-label">总人数</div></div>
+        <div class="stat-item"><div class="stat-number" id="submittedCount">0</div><div class="stat-label">已提交</div></div>
+        <div class="stat-item"><div class="stat-number" id="progressPercent">0%</div><div class="stat-label">完成率</div></div>
+    </div>
+    
+    <div style="max-height:400px; overflow-y:auto; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:16px; padding:8px;">
+        <h4>📋 提交进度明细</h4>
+        <div id="progressList"><p style="color:gray;">请点击「加载数据」</p></div>
+    </div>
+    
+    <h4>🏆 考核结果排名</h4>
+    <div id="resultTableContainer"><p style="color:gray;">请点击「加载数据」</p></div>
+</div>
+<script>
+    const DIM_WEIGHTS = { complete: 0.3, load: 0.2, quality: 0.4, coop: 0.1 };
+    let allRaters = ["舒祥", "崔坤煜", "夏海", "王子阳", "段炼达", "张富明", "焦亚克", "陈建辉", "秦小余", "芦莹", "郝宇琪", "赵利哲", "王磊", "卢春维", "戴磊", "王世臣", "杨海兵", "刘战刚", "唐杰", "周天阳", "彭捷", "石国峰", "刘世杰", "吴优", "王金玉", "姜涛", "刘进军", "游钱军", "湛云飞", "周翔"];
+    let roleMap = {
+        "舒祥":"部门负责人","夏海":"部门负责人","张富明":"部门负责人","陈建辉":"部门负责人",
+        "秦小余":"部门负责人","赵利哲":"部门负责人","戴磊":"部门负责人","王世臣":"部门负责人",
+        "杨海兵":"部门负责人","唐杰":"部门负责人","刘世杰":"部门负责人","王子阳":"部门负责人",
+        "芦莹":"员工","郝宇琪":"员工","王磊":"员工","卢春维":"员工","段炼达":"员工",
+        "彭捷":"员工","石国峰":"员工","崔坤煜":"员工","周天阳":"员工","刘战刚":"员工",
+        "吴优":"员工","王金玉":"领导人员","姜涛":"领导人员","刘进军":"领导人员",
+        "游钱军":"领导人员","湛云飞":"领导人员","周翔":"领导人员"
+    };
+    let targetEmployees = ["舒祥", "崔坤煜", "夏海", "王子阳", "段炼达", "张富明", "焦亚克", "陈建辉", "秦小余", "芦莹", "郝宇琪", "赵利哲", "王磊", "卢春维", "戴磊", "王世臣", "杨海兵", "刘战刚", "唐杰", "周天阳", "彭捷", "石国峰", "刘世杰", "吴优"];
+    
+    function getRole(p) { return roleMap[p] || "员工"; }
+    function computeComposite(c,l,q,co) {
+        return Math.round((c*DIM_WEIGHTS.complete + l*DIM_WEIGHTS.load + q*DIM_WEIGHTS.quality + co*DIM_WEIGHTS.coop)*100)/100;
+    }
+    
+    function getWeight(target, rater) {
+        const targetRole = getRole(target);
+        const raterRole = getRole(rater);
+        const matrix = {
+            "部门负责人": { "主管领导": 0.35, "部门负责人": 0.30, "领导人员": 0.30, "员工": 0.05 },
+            "普通员工": { "部门负责人": 0.30, "领导人员": 0.30, "员工": 0.25, "主管领导": 0.05, "其他负责人": 0.10 }
+        };
+        const key = targetRole === "部门负责人" ? "部门负责人" : "普通员工";
+        const m = matrix[key] || matrix["普通员工"];
+        if (raterRole === "主管领导") return m["主管领导"] || 0.05;
+        if (raterRole === "部门负责人") return m["部门负责人"] || 0.3;
+        if (raterRole === "领导人员") return m["领导人员"] || 0.3;
+        if (raterRole === "员工") return m["员工"] || 0.25;
+        return m["其他负责人"] || 0.1;
+    }
+    
+    async function loadData() {
+        const quarter = document.getElementById('quarterInput').value.trim() || "2025年Q3";
+        try {
+            const resp = await fetch(`/api/summary/${quarter}`);
+            if (!resp.ok) throw new Error('网络错误');
+            const data = await resp.json();
+            renderDashboard(data, quarter);
+        } catch (err) {
+            alert('加载失败，请确认服务器已启动！\n错误：' + err.message);
+        }
+    }
+    
+    function renderDashboard(data, quarter) {
+        const ratersData = data.data || {};
+        const submittedNames = Object.keys(ratersData);
+        const total = allRaters.length;
+        const submitted = submittedNames.length;
+        document.getElementById('totalRaters').innerText = total;
+        document.getElementById('submittedCount').innerText = submitted;
+        document.getElementById('progressPercent').innerText = Math.round((submitted/total)*100) + '%';
+        
+        let listHtml = '';
+        for (const rater of allRaters) {
+            const done = ratersData[rater] !== undefined;
+            listHtml += `<div style="display:flex; justify-content:space-between; padding:4px 8px; border-bottom:1px solid #f1f5f9;">
+                <span>${rater}</span>
+                <span style="color:${done ? '#16a34a' : '#dc2626'}; font-weight:600;">${done ? '✅ 已提交' : '⏳ 未提交'}</span>
+            </div>`;
+        }
+        document.getElementById('progressList').innerHTML = listHtml;
+        
+        const targetMap = new Map();
+        for (const [rater, info] of Object.entries(ratersData)) {
+            const ratings = info.ratings || [];
+            for (const r of ratings) {
+                const weight = getWeight(r.target, rater);
+                const weightedScore = r.composite * weight;
+                if (!targetMap.has(r.target)) targetMap.set(r.target, { sum: 0, totalWeight: 0 });
+                const rec = targetMap.get(r.target);
+                rec.sum += weightedScore;
+                rec.totalWeight += weight;
+            }
+        }
+        
+        const results = [];
+        for (const emp of targetEmployees) {
+            const rec = targetMap.get(emp);
+            let score = rec ? rec.sum / rec.totalWeight : 0;
+            score = Math.round(score * 100) / 100;
+            const grade = score >= 90 ? 'A' : (score >= 75 ? 'B' : (score >= 60 ? 'C' : 'D'));
+            results.push({ name: emp, score, grade });
+        }
+        results.sort((a,b) => b.score - a.score);
+        
+        let tableHtml = `<table><thead><tr><th>排名</th><th>姓名</th><th>角色</th><th>得分</th><th>等级</th></tr></thead><tbody>`;
+        results.forEach((r, idx) => {
+            tableHtml += `<tr><td>${idx+1}</td><td>${r.name}</td><td>${getRole(r.name)}</td><td><strong>${r.score.toFixed(2)}</strong></td><td><span class="grade-${r.grade}">${r.grade}级</span></td></tr>`;
+        });
+        tableHtml += `</tbody></table>`;
+        document.getElementById('resultTableContainer').innerHTML = tableHtml;
+    }
+    
+    function exportCSV() {
+        const table = document.querySelector('#resultTableContainer table');
+        if (!table) { alert('请先加载数据'); return; }
+        let csv = '\uFEFF排名,姓名,角色,得分,等级\n';
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            const cols = row.querySelectorAll('td');
+            csv += `${cols[0].innerText},${cols[1].innerText},${cols[2].innerText},${cols[3].innerText},${cols[4].innerText}\n`;
+        });
+        const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `考核结果_${document.getElementById('quarterInput').value}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('loadDataBtn').addEventListener('click', loadData);
+        document.getElementById('refreshBtn').addEventListener('click', loadData);
+        document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
+        loadData();
+    });
+</script>
+</body>
+</html>
