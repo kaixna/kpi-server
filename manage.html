@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>绩效考核系统 - 管理员后台</title>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, sans-serif; }
+        body { background: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 28px; padding: 24px; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1); }
+        h1 { color: #1a4d6b; }
+        .panel { background: #fefce8; border: 1px solid #fde047; border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        .btn { background: #1a4d6b; border: none; padding: 10px 20px; border-radius: 40px; color: white; cursor: pointer; font-weight: 600; margin: 4px 8px 4px 0; }
+        .btn-success { background: #16a34a; }
+        .btn-outline { background: #eef2ff; color: #1a4d6b; border: 1px solid #cbd5e1; }
+        .row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+        .item { flex: 1; min-width: 200px; }
+        .item label { display: block; font-weight: 600; font-size: 0.85rem; }
+        .item input, .item textarea { width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #cbd5e1; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 40px; z-index: 999; }
+        @media (max-width:600px) { .row { flex-direction: column; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔧 管理员后台</h1>
+    <p>管理员工名单、角色映射、引导语等配置</p>
+
+    <div class="panel">
+        <h3>📋 当前配置</h3>
+        <div id="configDisplay"><p>加载中...</p></div>
+    </div>
+
+    <div class="panel">
+        <h3>✏️ 编辑员工名单</h3>
+        <div class="row">
+            <div class="item"><label>被打分人（逗号分隔）</label><input type="text" id="employeeInput" placeholder="舒祥,崔坤煜,..."></div>
+        </div>
+        <button id="saveEmployeeBtn" class="btn btn-success">💾 保存员工名单</button>
+    </div>
+
+    <div class="panel">
+        <h3>✏️ 编辑角色映射</h3>
+        <div class="row">
+            <div class="item"><label>角色映射（姓名:角色, 逗号分隔）</label><input type="text" id="roleInput" placeholder="舒祥:部门负责人,芦莹:员工,..."></div>
+        </div>
+        <button id="saveRoleBtn" class="btn btn-success">💾 保存角色映射</button>
+    </div>
+
+    <div class="panel">
+        <h3>📝 编辑引导语</h3>
+        <div class="row">
+            <div class="item"><label>打分页面引导语</label><textarea id="guideInput" rows="3"></textarea></div>
+        </div>
+        <button id="saveGuideBtn" class="btn btn-success">💾 保存引导语</button>
+    </div>
+
+    <div class="panel">
+        <h3>🖼️ 上传工作图（暂不支持，请通过 GitHub 上传）</h3>
+        <p style="color:#666; font-size:0.9rem;">图片上传功能需额外配置云存储，当前可跳过</p>
+    </div>
+
+    <div style="margin-top:20px;">
+        <button id="refreshConfigBtn" class="btn btn-outline">🔄 刷新配置</button>
+        <a href="./" class="btn btn-outline" style="text-decoration:none;">📊 返回打分页</a>
+        <a href="./admin.html" class="btn btn-outline" style="text-decoration:none;">📈 查看结果</a>
+    </div>
+</div>
+<script>
+    // ==================== API 地址 ====================
+    const API_BASE = '';
+
+    async function loadConfig() {
+        try {
+            const resp = await fetch('/api/config');
+            if (!resp.ok) throw new Error('加载失败');
+            const data = await resp.json();
+            document.getElementById('configDisplay').innerHTML = `
+                <p><strong>员工总数：</strong>${data.employees ? data.employees.length : 0}</p>
+                <p><strong>角色数：</strong>${data.roleMap ? Object.keys(data.roleMap).length : 0}</p>
+                <p><strong>引导语：</strong>${data.guideText ? data.guideText.substring(0, 50) + '...' : '未设置'}</p>
+                <p><strong>当前季度：</strong>${data.currentQuarter || '2025年Q3'}</p>
+            `;
+            // 填充表单
+            if (data.employees) document.getElementById('employeeInput').value = data.employees.join(',');
+            if (data.roleMap) {
+                const roleStr = Object.entries(data.roleMap).map(([k,v]) => `${k}:${v}`).join(',');
+                document.getElementById('roleInput').value = roleStr;
+            }
+            if (data.guideText) document.getElementById('guideInput').value = data.guideText;
+        } catch (err) {
+            document.getElementById('configDisplay').innerHTML = `<p style="color:red;">⚠️ 加载失败：${err.message}</p>`;
+        }
+    }
+
+    async function saveConfig(type, value) {
+        try {
+            const resp = await fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, value })
+            });
+            if (!resp.ok) throw new Error('保存失败');
+            const result = await resp.json();
+            showToast('✅ 保存成功');
+            loadConfig();
+        } catch (err) {
+            showToast('❌ 保存失败：' + err.message);
+        }
+    }
+
+    function showToast(msg) {
+        let t = document.querySelector('.toast');
+        if (t) t.remove();
+        t = document.createElement('div');
+        t.className = 'toast';
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 3000);
+    }
+
+    // 绑定事件
+    document.getElementById('saveEmployeeBtn').addEventListener('click', () => {
+        const val = document.getElementById('employeeInput').value;
+        const arr = val.split(',').map(s => s.trim()).filter(s => s);
+        saveConfig('employees', arr);
+    });
+
+    document.getElementById('saveRoleBtn').addEventListener('click', () => {
+        const val = document.getElementById('roleInput').value;
+        const obj = {};
+        val.split(',').forEach(pair => {
+            const [k, v] = pair.split(':');
+            if (k && v) obj[k.trim()] = v.trim();
+        });
+        saveConfig('roleMap', obj);
+    });
+
+    document.getElementById('saveGuideBtn').addEventListener('click', () => {
+        const val = document.getElementById('guideInput').value;
+        saveConfig('guideText', val);
+    });
+
+    document.getElementById('refreshConfigBtn').addEventListener('click', loadConfig);
+
+    loadConfig();
+</script>
+</body>
+</html>
