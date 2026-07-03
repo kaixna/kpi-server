@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>季度绩效考核 - 打分</title>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, sans-serif; }
+        body { background: #f0f2f5; margin: 0; padding: 10px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 28px; padding: 20px; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1); }
+        .header { text-align: center; padding-bottom: 16px; border-bottom: 2px solid #eef2f7; margin-bottom: 16px; }
+        .header h1 { margin: 0; color: #1a4d6b; font-size: 1.5rem; }
+        .header p { margin: 4px 0 0; color: #666; font-size: 0.9rem; }
+        .quarter-badge { display: inline-block; background: #1a4d6b; color: white; padding: 4px 16px; border-radius: 40px; font-size: 0.8rem; margin-top: 8px; }
+        .scoring-guide { background: #e6f7ff; padding: 12px 14px; border-radius: 16px; margin-bottom: 16px; border-left: 4px solid #1a4d6b; font-size: 0.9rem; }
+        .score-block { background: #f9fafb; border-radius: 16px; padding: 14px; margin-bottom: 14px; border-left: 4px solid #1a4d6b; }
+        .score-title { font-weight: 700; font-size: 1rem; margin-bottom: 10px; color: #1a4d6b; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .score-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .score-item { flex: 1; min-width: 70px; }
+        .score-item label { display: block; font-size: 0.7rem; color: #4a6a85; margin-bottom: 2px; }
+        .score-item input { width: 100%; padding: 10px 6px; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 16px; background: white; }
+        .role-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.65rem; font-weight: 600; }
+        .role-dept { background: #dcfce7; color: #166534; }
+        .role-leader { background: #dbeafe; color: #1e40af; }
+        .role-staff { background: #fef3c7; color: #b45309; }
+        .btn { background: #1a4d6b; border: none; padding: 14px; border-radius: 40px; color: white; cursor: pointer; font-weight: 600; font-size: 1rem; width: 100%; margin-top: 12px; touch-action: manipulation; }
+        .btn-success { background: #16a34a; }
+        .btn-outline { background: #eef2ff; color: #1a4d6b; border: 1px solid #cbd5e1; }
+        select { width: 100%; max-width: 300px; padding: 12px; border-radius: 40px; border: 1px solid #cbd5e1; font-size: 16px; background: white; margin-top: 4px; }
+        .rater-selector { margin-bottom: 16px; }
+        .rater-selector label { font-weight: 700; display: block; margin-bottom: 4px; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 20px; border-radius: 40px; font-weight: 600; z-index: 999; max-width: 90%; text-align: center; font-size: 0.9rem; }
+        @media (max-width: 600px) {
+            .score-item { min-width: 60px; }
+            .score-item input { font-size: 16px; padding: 12px 6px; }
+        }
+    </style>
+</head>
+<body>
+<div id="app" class="container">
+    <div class="header">
+        <h1>📊 季度绩效考核</h1>
+        <p>客观公正 · 实事求是</p>
+        <div id="quarterDisplay" class="quarter-badge">加载中...</div>
+    </div>
+    
+    <div class="rater-selector">
+        <label>👤 选择您的姓名</label>
+        <select id="raterSelect"><option value="">-- 加载中 --</option></select>
+    </div>
+    
+    <div id="guideTextDisplay" class="scoring-guide">请为每位同事打分</div>
+    <div id="scoringFormContainer"><div style="text-align:center;padding:40px;color:#666;">加载评分表单中...</div></div>
+    
+    <button id="submitScoresBtn" class="btn btn-success">📤 提交全部评分</button>
+</div>
+<script>
+    let employees = [];
+    let allRaters = [];
+    let roleMap = {};
+    let employeeImages = {};
+    let guideText = "";
+    let currentQuarter = "2025年Q3";
+    
+    const DIM_WEIGHTS = { complete: 0.3, load: 0.2, quality: 0.4, coop: 0.1 };
+    
+    function loadConfig() {
+        const defaultEmployees = ["舒祥", "崔坤煜", "夏海", "王子阳", "段炼达", "张富明", "焦亚克", "陈建辉", "秦小余", "芦莹", "郝宇琪", "赵利哲", "王磊", "卢春维", "戴磊", "王世臣", "杨海兵", "刘战刚", "唐杰", "周天阳", "彭捷", "石国峰", "刘世杰", "吴优"];
+        const defaultRaters = ["舒祥", "崔坤煜", "夏海", "王子阳", "段炼达", "张富明", "焦亚克", "陈建辉", "秦小余", "芦莹", "郝宇琪", "赵利哲", "王磊", "卢春维", "戴磊", "王世臣", "杨海兵", "刘战刚", "唐杰", "周天阳", "彭捷", "石国峰", "刘世杰", "吴优", "王金玉", "姜涛", "刘进军", "游钱军", "湛云飞", "周翔"];
+        const defaultRoleMap = {
+            "舒祥":"部门负责人","夏海":"部门负责人","张富明":"部门负责人","陈建辉":"部门负责人",
+            "秦小余":"部门负责人","赵利哲":"部门负责人","戴磊":"部门负责人","王世臣":"部门负责人",
+            "杨海兵":"部门负责人","唐杰":"部门负责人","刘世杰":"部门负责人","王子阳":"部门负责人",
+            "芦莹":"员工","郝宇琪":"员工","王磊":"员工","卢春维":"员工","段炼达":"员工",
+            "彭捷":"员工","石国峰":"员工","崔坤煜":"员工","周天阳":"员工","刘战刚":"员工",
+            "吴优":"员工","王金玉":"领导人员","姜涛":"领导人员","刘进军":"领导人员",
+            "游钱军":"领导人员","湛云飞":"领导人员","周翔":"领导人员"
+        };
+        
+        try {
+            const stored = localStorage.getItem('kpi_server_config');
+            if (stored) {
+                const cfg = JSON.parse(stored);
+                if (cfg.employees) employees = cfg.employees;
+                if (cfg.allRaters) allRaters = cfg.allRaters;
+                if (cfg.roleMap) roleMap = cfg.roleMap;
+                if (cfg.guideText) guideText = cfg.guideText;
+                if (cfg.currentQuarter) currentQuarter = cfg.currentQuarter;
+                if (cfg.employeeImages) employeeImages = cfg.employeeImages;
+                return;
+            }
+        } catch(e) {}
+        
+        employees = defaultEmployees;
+        allRaters = defaultRaters;
+        roleMap = defaultRoleMap;
+        guideText = "请根据每位同事本季度的工作表现，客观公正地在四个维度上打分。工作完成度满分30分，工作负荷满分20分，工作质量满分40分，团结协作满分10分。";
+        currentQuarter = "2025年Q3";
+    }
+    
+    function getRole(person) { return roleMap[person] || "员工"; }
+    function computeComposite(c,l,q,co) {
+        return Math.round((c*DIM_WEIGHTS.complete + l*DIM_WEIGHTS.load + q*DIM_WEIGHTS.quality + co*DIM_WEIGHTS.coop)*100)/100;
+    }
+    
+    function renderScoringForm(rater) {
+        const container = document.getElementById("scoringFormContainer");
+        if (!container) return;
+        if (!rater) {
+            container.innerHTML = '<p style="color:gray; text-align:center; padding:20px;">请先选择您的姓名</p>';
+            return;
+        }
+        const targets = employees.filter(e => e !== rater);
+        if (targets.length === 0) {
+            container.innerHTML = '<p style="color:gray; text-align:center; padding:20px;">当前没有需要评分的同事</p>';
+            return;
+        }
+        let html = '';
+        for (const target of targets) {
+            let imgHtml = "";
+            if (employeeImages[target]) {
+                imgHtml = `<div style="text-align:center; margin:6px 0;"><img src="${employeeImages[target]}" style="max-width:100%; max-height:120px; border-radius:8px; border:1px solid #cbd5e1;"></div>`;
+            }
+            const roleClass = getRole(target) === '部门负责人' ? 'dept' : (getRole(target) === '领导人员' ? 'leader' : 'staff');
+            html += `
+                <div class="score-block" data-target="${target}">
+                    <div class="score-title">🎯 ${target} <span class="role-badge role-${roleClass}">${getRole(target)}</span></div>
+                    ${imgHtml}
+                    <div class="score-row">
+                        <div class="score-item"><label>完成度 (30)</label><input type="number" class="score-complete" min="0" max="30" placeholder="0" value=""></div>
+                        <div class="score-item"><label>负荷 (20)</label><input type="number" class="score-load" min="0" max="20" placeholder="0" value=""></div>
+                        <div class="score-item"><label>质量 (40)</label><input type="number" class="score-quality" min="0" max="40" placeholder="0" value=""></div>
+                        <div class="score-item"><label>协作 (10)</label><input type="number" class="score-coop" min="0" max="10" placeholder="0" value=""></div>
+                    </div>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+    }
+    
+    function updateUI() {
+        const qDisplay = document.getElementById("quarterDisplay");
+        if (qDisplay) qDisplay.innerHTML = `📅 ${currentQuarter}`;
+        
+        const sel = document.getElementById("raterSelect");
+        if (sel && allRaters.length) {
+            const val = sel.value;
+            sel.innerHTML = '<option value="">-- 请选择 --</option>';
+            allRaters.forEach(emp => {
+                const opt = document.createElement("option");
+                opt.value = emp; opt.textContent = emp;
+                sel.appendChild(opt);
+            });
+            if (val && allRaters.includes(val)) sel.value = val;
+            sel.onchange = function() { renderScoringForm(this.value); };
+            if (sel.value) renderScoringForm(sel.value);
+            else document.getElementById("scoringFormContainer").innerHTML = '<p style="color:gray; text-align:center; padding:20px;">请选择您的姓名</p>';
+        }
+        document.getElementById("guideTextDisplay").innerHTML = guideText;
+    }
+    
+    function showToast(msg) {
+        let existing = document.querySelector('.toast');
+        if (existing) existing.remove();
+        const toast = document.createElement("div");
+        toast.className = "toast";
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+    
+    async function submitScores(rater) {
+        if (!rater) { alert("请先选择您的姓名"); return; }
+        const targets = employees.filter(e => e !== rater);
+        const ratings = [];
+        for (const target of targets) {
+            const block = document.querySelector(`.score-block[data-target="${target}"]`);
+            if (!block) continue;
+            const complete = parseFloat(block.querySelector(".score-complete").value);
+            const load = parseFloat(block.querySelector(".score-load").value);
+            const quality = parseFloat(block.querySelector(".score-quality").value);
+            const coop = parseFloat(block.querySelector(".score-coop").value);
+            if (isNaN(complete) || isNaN(load) || isNaN(quality) || isNaN(coop)) {
+                alert(`请为 ${target} 的四个维度都填写分数`);
+                return;
+            }
+            if (complete<0 || complete>30 || load<0 || load>20 || quality<0 || quality>40 || coop<0 || coop>10) {
+                alert(`${target} 的分数超出范围，请检查`);
+                return;
+            }
+            const composite = computeComposite(complete, load, quality, coop);
+            ratings.push({
+                target: target,
+                composite: composite,
+                dimensions: { complete, load, quality, coop }
+            });
+        }
+        
+        try {
+            const response = await fetch('/api/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    rater: rater,
+                    quarter: currentQuarter,
+                    ratings: ratings
+                })
+            });
+            const result = await response.json();
+            if (result.success) {
+                showToast(`✅ 提交成功！${result.message}`);
+                renderScoringForm(rater);
+            } else {
+                alert('提交失败：' + (result.error || '未知错误'));
+            }
+        } catch (err) {
+            alert('网络连接失败，请确认服务器已启动！\n错误：' + err.message);
+        }
+    }
+    
+    loadConfig();
+    document.addEventListener("DOMContentLoaded", () => {
+        updateUI();
+        document.getElementById("submitScoresBtn")?.addEventListener("click", () => {
+            const rater = document.getElementById("raterSelect")?.value;
+            submitScores(rater);
+        });
+    });
+</script>
+</body>
+</html>
