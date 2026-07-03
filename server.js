@@ -9,48 +9,49 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-// 静态文件服务
-app.use(express.static(path.join(__dirname, 'public')));
+// ============ 静态文件 ============
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath));
 
-// 数据存储路径
+// ============ 数据存储（内存兜底） ============
+let memoryData = {}; // 如果文件写入失败，用内存存储
+
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'ratings.json');
 
-// 确保 data 目录存在
+// 尝试创建目录
 try {
     if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });
         console.log('✅ 数据目录创建成功');
     }
-} catch (err) {
-    console.error('⚠️ 创建数据目录失败，将使用内存存储:', err.message);
+} catch (e) {
+    console.log('⚠️ 数据目录创建失败，将使用内存存储');
 }
 
-// 读取数据（带容错）
 function readData() {
     try {
         if (fs.existsSync(DATA_FILE)) {
-            const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-            return JSON.parse(raw);
+            return JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
         }
     } catch (e) {
-        console.error('读取数据失败，使用空数据:', e.message);
+        console.log('⚠️ 读取文件失败，使用内存数据');
     }
-    return {};
+    return memoryData;
 }
 
-// 写入数据（带容错）
 function writeData(data) {
+    memoryData = data; // 始终更新内存
     try {
         fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
         return true;
     } catch (e) {
-        console.error('写入数据失败:', e.message);
+        console.log('⚠️ 写入文件失败（已保留内存数据）');
         return false;
     }
 }
 
-// API：提交评分
+// ============ API ============
 app.post('/api/submit', (req, res) => {
     try {
         const { rater, quarter, ratings } = req.body;
@@ -66,42 +67,39 @@ app.post('/api/submit', (req, res) => {
         writeData(allData);
         res.json({ success: true, message: `收到 ${rater} 的 ${ratings.length} 条评分` });
     } catch (err) {
-        res.status(500).json({ error: '服务器内部错误: ' + err.message });
+        res.status(500).json({ error: '服务器错误: ' + err.message });
     }
 });
 
-// API：获取汇总数据
 app.get('/api/summary/:quarter', (req, res) => {
     try {
         const quarter = req.params.quarter;
         const allData = readData();
-        const quarterData = allData[quarter] || {};
         res.json({
             quarter: quarter,
-            totalRaters: Object.keys(quarterData).length,
-            data: quarterData
+            totalRaters: Object.keys(allData[quarter] || {}).length,
+            data: allData[quarter] || {}
         });
     } catch (err) {
-        res.status(500).json({ error: '服务器内部错误: ' + err.message });
+        res.status(500).json({ error: err.message });
     }
 });
 
-// 根路径返回打分页面
+// ============ 根路径 ============
 app.get('/', (req, res) => {
     try {
-        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+        res.sendFile(path.join(publicPath, 'index.html'));
     } catch (err) {
-        res.status(500).send('页面加载失败');
+        res.status(500).send('页面加载失败，请稍后重试');
     }
 });
 
-// 健康检查（用于 Railway 探测服务是否存活）
+// ============ 健康检查 ============
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// 启动服务器
+// ============ 启动 ============
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ 服务器运行在端口 ${PORT}`);
-    console.log(`📁 数据目录: ${DATA_DIR}`);
 });
