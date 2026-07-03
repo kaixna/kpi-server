@@ -84,7 +84,36 @@ app.get('/api/summary/:quarter', (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+// ============ 图片上传 ============
+app.post('/api/upload-image', (req, res) => {
+    try {
+        const { name, image } = req.body;
+        if (!name || !image) return res.status(400).json({ error: '参数错误' });
+        const allData = readData();
+        if (!allData._config) allData._config = {};
+        if (!allData._config.employeeImages) allData._config.employeeImages = {};
+        allData._config.employeeImages[name] = image;
+        writeData(allData);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
+app.post('/api/delete-image', (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name) return res.status(400).json({ error: '参数错误' });
+        const allData = readData();
+        if (allData._config && allData._config.employeeImages) {
+            delete allData._config.employeeImages[name];
+            writeData(allData);
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 // ============ 根路径 ============
 app.get('/', (req, res) => {
     try {
