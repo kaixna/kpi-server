@@ -3,96 +3,322 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>绩效考核系统 - 管理员后台</title>
+    <title>绩效考核系统 - 完整管理后台</title>
     <style>
         * { box-sizing: border-box; font-family: system-ui, sans-serif; }
         body { background: #f0f2f5; margin: 0; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 28px; padding: 24px; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1); }
         h1 { color: #1a4d6b; }
-        .panel { background: #fefce8; border: 1px solid #fde047; border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        .tabs { display: flex; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; flex-wrap: wrap; }
+        .tab { padding: 10px 20px; border: none; background: none; cursor: pointer; font-weight: 600; border-radius: 8px; }
+        .tab.active { background: #1a4d6b; color: white; }
+        .panel { display: none; padding: 20px 0; }
+        .panel.active { display: block; }
+        .card { background: #f8fafc; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #e2e8f0; }
+        .row { display: flex; gap: 16px; flex-wrap: wrap; }
+        .col { flex: 1; min-width: 200px; }
+        label { font-weight: 600; display: block; margin-bottom: 4px; font-size: 0.9rem; }
+        input, textarea, select { width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #cbd5e1; }
         .btn { background: #1a4d6b; border: none; padding: 10px 20px; border-radius: 40px; color: white; cursor: pointer; font-weight: 600; margin: 4px 8px 4px 0; }
         .btn-success { background: #16a34a; }
+        .btn-danger { background: #dc2626; }
         .btn-outline { background: #eef2ff; color: #1a4d6b; border: 1px solid #cbd5e1; }
-        .row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
-        .item { flex: 1; min-width: 200px; }
-        .item label { display: block; font-weight: 600; font-size: 0.85rem; }
-        .item input, .item textarea { width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #cbd5e1; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+        th { background: #f1f5f9; }
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 40px; z-index: 999; }
+        .img-preview { max-width: 200px; max-height: 120px; border-radius: 8px; margin-top: 8px; }
         @media (max-width:600px) { .row { flex-direction: column; } }
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 40px; font-size: 0.75rem; }
+        .badge-green { background: #dcfce7; color: #166534; }
+        .badge-red { background: #fecaca; color: #991b1b; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>🔧 管理员后台</h1>
-    <p>管理员工名单、角色映射、引导语等配置</p>
+    <h1>🔧 完整管理员后台</h1>
+    <p>管理员工、角色、图片、引导语，查看打分进度</p>
 
-    <div class="panel">
-        <h3>📋 当前配置</h3>
-        <div id="configDisplay"><p>加载中...</p></div>
+    <div class="tabs">
+        <button class="tab active" data-tab="employees">👥 员工管理</button>
+        <button class="tab" data-tab="roles">🎭 角色映射</button>
+        <button class="tab" data-tab="images">🖼️ 工作图</button>
+        <button class="tab" data-tab="guide">📝 引导语</button>
+        <button class="tab" data-tab="progress">📋 打分进度</button>
+        <button class="tab" data-tab="quarter">📅 季度</button>
     </div>
 
-    <div class="panel">
-        <h3>✏️ 编辑员工名单</h3>
-        <div class="row">
-            <div class="item"><label>被打分人（逗号分隔）</label><input type="text" id="employeeInput" placeholder="舒祥,崔坤煜,..."></div>
+    <!-- 员工管理 -->
+    <div id="tab-employees" class="panel active">
+        <div class="card">
+            <h3>👥 员工名单</h3>
+            <p>添加或删除被打分人（领导人员不参与被打分）</p>
+            <div class="row">
+                <div class="col">
+                    <label>当前员工（逗号分隔）</label>
+                    <input type="text" id="employeeList" placeholder="舒祥,崔坤煜,夏海,...">
+                </div>
+            </div>
+            <button id="saveEmployeesBtn" class="btn btn-success">💾 保存员工名单</button>
+            <button id="resetEmployeesBtn" class="btn btn-outline">🔄 恢复默认</button>
+            <div style="margin-top:12px;">
+                <p><strong>当前员工数：</strong><span id="employeeCount">0</span></p>
+            </div>
         </div>
-        <button id="saveEmployeeBtn" class="btn btn-success">💾 保存员工名单</button>
     </div>
 
-    <div class="panel">
-        <h3>✏️ 编辑角色映射</h3>
-        <div class="row">
-            <div class="item"><label>角色映射（姓名:角色, 逗号分隔）</label><input type="text" id="roleInput" placeholder="舒祥:部门负责人,芦莹:员工,..."></div>
+    <!-- 角色映射 -->
+    <div id="tab-roles" class="panel">
+        <div class="card">
+            <h3>🎭 角色映射</h3>
+            <p>格式：姓名:角色，用逗号分隔（如：舒祥:部门负责人,芦莹:员工）</p>
+            <div class="row">
+                <div class="col">
+                    <label>角色映射</label>
+                    <input type="text" id="roleMapping" placeholder="舒祥:部门负责人,芦莹:员工,...">
+                </div>
+            </div>
+            <button id="saveRolesBtn" class="btn btn-success">💾 保存角色映射</button>
+            <div style="margin-top:12px;">
+                <p><strong>角色列表：</strong></p>
+                <div id="rolePreview"></div>
+            </div>
         </div>
-        <button id="saveRoleBtn" class="btn btn-success">💾 保存角色映射</button>
     </div>
 
-    <div class="panel">
-        <h3>📝 编辑引导语</h3>
-        <div class="row">
-            <div class="item"><label>打分页面引导语</label><textarea id="guideInput" rows="3"></textarea></div>
+    <!-- 工作图 -->
+    <div id="tab-images" class="panel">
+        <div class="card">
+            <h3>🖼️ 员工工作完成情况图</h3>
+            <p>为每位员工上传一张图片（显示在打分页面中）</p>
+            <div id="imageUploadArea"></div>
         </div>
-        <button id="saveGuideBtn" class="btn btn-success">💾 保存引导语</button>
     </div>
 
-    <div class="panel">
-        <h3>🖼️ 上传工作图（暂不支持，请通过 GitHub 上传）</h3>
-        <p style="color:#666; font-size:0.9rem;">图片上传功能需额外配置云存储，当前可跳过</p>
+    <!-- 引导语 -->
+    <div id="tab-guide" class="panel">
+        <div class="card">
+            <h3>📝 打分页面引导语</h3>
+            <p>员工打开打分页面时看到的提示文字</p>
+            <div class="row">
+                <div class="col">
+                    <label>引导语</label>
+                    <textarea id="guideText" rows="4" style="width:100%;"></textarea>
+                </div>
+            </div>
+            <button id="saveGuideBtn" class="btn btn-success">💾 保存引导语</button>
+        </div>
     </div>
 
-    <div style="margin-top:20px;">
-        <button id="refreshConfigBtn" class="btn btn-outline">🔄 刷新配置</button>
+    <!-- 打分进度 -->
+    <div id="tab-progress" class="panel">
+        <div class="card">
+            <h3>📋 打分提交进度</h3>
+            <p>查看哪些员工已提交评分</p>
+            <button id="refreshProgressBtn" class="btn">🔄 刷新进度</button>
+            <div id="progressDisplay" style="margin-top:12px;"></div>
+        </div>
+        <div class="card">
+            <h3>📊 考核结果</h3>
+            <button id="calcResultBtn" class="btn btn-success">📐 计算最终结果</button>
+            <div id="resultDisplay" style="margin-top:12px;"></div>
+        </div>
+    </div>
+
+    <!-- 季度管理 -->
+    <div id="tab-quarter" class="panel">
+        <div class="card">
+            <h3>📅 季度管理</h3>
+            <div class="row">
+                <div class="col">
+                    <label>当前季度</label>
+                    <input type="text" id="quarterInput" placeholder="2025年Q3">
+                </div>
+            </div>
+            <button id="saveQuarterBtn" class="btn btn-success">💾 保存季度</button>
+        </div>
+    </div>
+
+    <div style="margin-top:20px; border-top:2px solid #e2e8f0; padding-top:20px;">
         <a href="./" class="btn btn-outline" style="text-decoration:none;">📊 返回打分页</a>
         <a href="./admin.html" class="btn btn-outline" style="text-decoration:none;">📈 查看结果</a>
     </div>
 </div>
 <script>
-    // ==================== API 地址 ====================
+    // ==================== API 基础地址 ====================
     const API_BASE = '';
 
+    // ==================== 全局数据 ====================
+    let configData = {
+        employees: [],
+        roleMap: {},
+        guideText: '',
+        currentQuarter: '2025年Q3',
+        employeeImages: {}
+    };
+
+    // ==================== 加载配置 ====================
     async function loadConfig() {
         try {
             const resp = await fetch('/api/config');
-            if (!resp.ok) throw new Error('加载失败');
+            if (!resp.ok) throw new Error('加载配置失败');
             const data = await resp.json();
-            document.getElementById('configDisplay').innerHTML = `
-                <p><strong>员工总数：</strong>${data.employees ? data.employees.length : 0}</p>
-                <p><strong>角色数：</strong>${data.roleMap ? Object.keys(data.roleMap).length : 0}</p>
-                <p><strong>引导语：</strong>${data.guideText ? data.guideText.substring(0, 50) + '...' : '未设置'}</p>
-                <p><strong>当前季度：</strong>${data.currentQuarter || '2025年Q3'}</p>
-            `;
-            // 填充表单
-            if (data.employees) document.getElementById('employeeInput').value = data.employees.join(',');
-            if (data.roleMap) {
-                const roleStr = Object.entries(data.roleMap).map(([k,v]) => `${k}:${v}`).join(',');
-                document.getElementById('roleInput').value = roleStr;
-            }
-            if (data.guideText) document.getElementById('guideInput').value = data.guideText;
+            configData = data;
+            renderAll();
         } catch (err) {
-            document.getElementById('configDisplay').innerHTML = `<p style="color:red;">⚠️ 加载失败：${err.message}</p>`;
+            showToast('⚠️ 加载配置失败：' + err.message);
         }
     }
 
+    function renderAll() {
+        // 员工列表
+        document.getElementById('employeeList').value = (configData.employees || []).join(',');
+        document.getElementById('employeeCount').textContent = (configData.employees || []).length;
+
+        // 角色映射
+        const roleStr = Object.entries(configData.roleMap || {}).map(([k,v]) => `${k}:${v}`).join(',');
+        document.getElementById('roleMapping').value = roleStr;
+        renderRolePreview();
+
+        // 引导语
+        document.getElementById('guideText').value = configData.guideText || '';
+
+        // 季度
+        document.getElementById('quarterInput').value = configData.currentQuarter || '2025年Q3';
+
+        // 图片上传区域
+        renderImageUploads();
+
+        // 进度
+        loadProgress();
+    }
+
+    function renderRolePreview() {
+        const container = document.getElementById('rolePreview');
+        const map = configData.roleMap || {};
+        let html = '';
+        for (const [name, role] of Object.entries(map)) {
+            const color = role === '部门负责人' ? 'badge-green' : (role === '领导人员' ? 'badge' : '');
+            html += `<span style="margin-right:12px;">${name} → <strong>${role}</strong></span>`;
+        }
+        container.innerHTML = html || '暂无角色数据';
+    }
+
+    function renderImageUploads() {
+        const container = document.getElementById('imageUploadArea');
+        const employees = configData.employees || [];
+        const images = configData.employeeImages || {};
+        let html = '';
+        for (const emp of employees) {
+            const hasImage = images[emp];
+            html += `
+                <div style="border:1px solid #ddd; border-radius:12px; padding:12px; margin-bottom:12px;">
+                    <strong>${emp}</strong>
+                    <input type="file" accept="image/*" class="img-upload" data-name="${emp}" style="margin-top:8px;">
+                    ${hasImage ? `<img src="${images[emp]}" class="img-preview" style="display:block; margin-top:8px;">` : ''}
+                    ${hasImage ? `<button class="btn btn-danger img-delete" data-name="${emp}" style="margin-top:8px;padding:4px 12px;font-size:0.8rem;">🗑️ 删除</button>` : ''}
+                </div>
+            `;
+        }
+        container.innerHTML = html || '<p style="color:gray;">请先添加员工</p>';
+
+        // 绑定上传事件
+        document.querySelectorAll('.img-upload').forEach(input => {
+            input.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                const name = input.getAttribute('data-name');
+                if (!file || !name) return;
+                const reader = new FileReader();
+                reader.onload = async function(ev) {
+                    const base64 = ev.target.result;
+                    try {
+                        const resp = await fetch('/api/upload-image', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name, image: base64 })
+                        });
+                        if (!resp.ok) throw new Error('上传失败');
+                        showToast('✅ 图片上传成功');
+                        loadConfig();
+                    } catch (err) {
+                        showToast('❌ 上传失败：' + err.message);
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        // 绑定删除事件
+        document.querySelectorAll('.img-delete').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const name = btn.getAttribute('data-name');
+                if (!confirm(`确定删除 ${name} 的图片吗？`)) return;
+                try {
+                    const resp = await fetch('/api/delete-image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name })
+                    });
+                    if (!resp.ok) throw new Error('删除失败');
+                    showToast('✅ 图片已删除');
+                    loadConfig();
+                } catch (err) {
+                    showToast('❌ 删除失败：' + err.message);
+                }
+            });
+        });
+    }
+
+    // ==================== 加载进度和结果 ====================
+    async function loadProgress() {
+        const quarter = configData.currentQuarter || '2025年Q3';
+        try {
+            const resp = await fetch(`/api/summary/${quarter}`);
+            if (!resp.ok) throw new Error('加载进度失败');
+            const data = await resp.json();
+            const raters = Object.keys(data.data || {});
+            const total = (configData.employees || []).length;
+            const submitted = raters.filter(r => (configData.employees || []).includes(r)).length;
+            document.getElementById('progressDisplay').innerHTML = `
+                <p><strong>已提交：</strong>${submitted} / ${total}</p>
+                <div style="background:#e2e8f0; border-radius:10px; height:10px; width:100%;">
+                    <div style="background:#16a34a; border-radius:10px; height:10px; width:${total > 0 ? (submitted/total*100) : 0}%;"></div>
+                </div>
+                <ul style="max-height:300px; overflow-y:auto; margin-top:12px;">
+                    ${(configData.employees || []).map(emp => {
+                        const done = raters.includes(emp);
+                        return `<li>${emp} : ${done ? '✅ 已提交' : '⏳ 未提交'}</li>`;
+                    }).join('')}
+                </ul>
+            `;
+        } catch (err) {
+            document.getElementById('progressDisplay').innerHTML = '<p style="color:red;">加载进度失败</p>';
+        }
+    }
+
+    async function calculateResult() {
+        const quarter = configData.currentQuarter || '2025年Q3';
+        try {
+            const resp = await fetch(`/api/summary/${quarter}`);
+            if (!resp.ok) throw new Error('计算失败');
+            const data = await resp.json();
+            // 简单展示结果
+            let html = '<table><thead><tr><th>姓名</th><th>角色</th><th>得分</th></tr></thead><tbody>';
+            const ratersData = data.data || {};
+            // 这里简单展示，实际计算在后台完成
+            for (const [name, info] of Object.entries(ratersData)) {
+                const ratings = info.ratings || [];
+                const avg = ratings.length > 0 ? (ratings.reduce((s,r) => s + r.composite, 0) / ratings.length) : 0;
+                html += `<tr><td>${name}</td><td>${configData.roleMap[name] || '员工'}</td><td>${avg.toFixed(2)}</td></tr>`;
+            }
+            html += '</tbody></table>';
+            document.getElementById('resultDisplay').innerHTML = html || '暂无数据';
+        } catch (err) {
+            document.getElementById('resultDisplay').innerHTML = '<p style="color:red;">计算失败</p>';
+        }
+    }
+
+    // ==================== 保存操作 ====================
     async function saveConfig(type, value) {
         try {
             const resp = await fetch('/api/config', {
@@ -101,7 +327,6 @@
                 body: JSON.stringify({ type, value })
             });
             if (!resp.ok) throw new Error('保存失败');
-            const result = await resp.json();
             showToast('✅ 保存成功');
             loadConfig();
         } catch (err) {
@@ -109,6 +334,7 @@
         }
     }
 
+    // ==================== Toast ====================
     function showToast(msg) {
         let t = document.querySelector('.toast');
         if (t) t.remove();
@@ -119,15 +345,30 @@
         setTimeout(() => t.remove(), 3000);
     }
 
-    // 绑定事件
-    document.getElementById('saveEmployeeBtn').addEventListener('click', () => {
-        const val = document.getElementById('employeeInput').value;
+    // ==================== Tab 切换 ====================
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+        });
+    });
+
+    // ==================== 绑定事件 ====================
+    document.getElementById('saveEmployeesBtn').addEventListener('click', () => {
+        const val = document.getElementById('employeeList').value;
         const arr = val.split(',').map(s => s.trim()).filter(s => s);
         saveConfig('employees', arr);
     });
 
-    document.getElementById('saveRoleBtn').addEventListener('click', () => {
-        const val = document.getElementById('roleInput').value;
+    document.getElementById('resetEmployeesBtn').addEventListener('click', () => {
+        const defaultEmps = ["舒祥", "崔坤煜", "夏海", "王子阳", "段炼达", "张富明", "焦亚克", "陈建辉", "秦小余", "芦莹", "郝宇琪", "赵利哲", "王磊", "卢春维", "戴磊", "王世臣", "杨海兵", "刘战刚", "唐杰", "周天阳", "彭捷", "石国峰", "刘世杰", "吴优"];
+        saveConfig('employees', defaultEmps);
+    });
+
+    document.getElementById('saveRolesBtn').addEventListener('click', () => {
+        const val = document.getElementById('roleMapping').value;
         const obj = {};
         val.split(',').forEach(pair => {
             const [k, v] = pair.split(':');
@@ -137,12 +378,19 @@
     });
 
     document.getElementById('saveGuideBtn').addEventListener('click', () => {
-        const val = document.getElementById('guideInput').value;
+        const val = document.getElementById('guideText').value;
         saveConfig('guideText', val);
     });
 
-    document.getElementById('refreshConfigBtn').addEventListener('click', loadConfig);
+    document.getElementById('saveQuarterBtn').addEventListener('click', () => {
+        const val = document.getElementById('quarterInput').value.trim();
+        if (val) saveConfig('currentQuarter', val);
+    });
 
+    document.getElementById('refreshProgressBtn').addEventListener('click', loadProgress);
+    document.getElementById('calcResultBtn').addEventListener('click', calculateResult);
+
+    // ==================== 启动 ====================
     loadConfig();
 </script>
 </body>
