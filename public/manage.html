@@ -3,99 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>绩效考核系统 - 完整管理后台</title>
+    <title>完整管理后台</title>
     <style>
         * { box-sizing: border-box; font-family: system-ui, sans-serif; }
-        body { background: #f0f2f5; margin: 0; padding: 20px; }
+        body { background: #f0f2f5; margin: 0; padding: 16px; }
         .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 28px; padding: 24px; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1); }
-        h1 { color: #1a4d6b; }
-        .tabs { display: flex; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; flex-wrap: wrap; }
-        .tab { padding: 10px 20px; border: none; background: none; cursor: pointer; font-weight: 600; border-radius: 8px; }
+        h1 { color: #1a4d6b; margin: 0 0 4px; }
+        .subtitle { color: #666; font-size: 0.95rem; margin: 0 0 20px; }
+        .tabs { display: flex; gap: 4px; border-bottom: 2px solid #e2e8f0; flex-wrap: wrap; }
+        .tab { padding: 10px 18px; border: none; background: none; cursor: pointer; font-weight: 600; border-radius: 10px 10px 0 0; color: #4a6a85; font-size: 0.9rem; }
         .tab.active { background: #1a4d6b; color: white; }
         .panel { display: none; padding: 20px 0; }
         .panel.active { display: block; }
         .card { background: #f8fafc; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #e2e8f0; }
+        .card h3 { margin: 0 0 8px; color: #1a4d6b; }
+        .card p { margin: 0 0 12px; color: #666; font-size: 0.9rem; }
         .row { display: flex; gap: 16px; flex-wrap: wrap; }
         .col { flex: 1; min-width: 200px; }
-        label { font-weight: 600; display: block; margin-bottom: 4px; font-size: 0.9rem; }
-        input, textarea, select { width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #cbd5e1; }
-        .btn { background: #1a4d6b; border: none; padding: 10px 20px; border-radius: 40px; color: white; cursor: pointer; font-weight: 600; margin: 4px 8px 4px 0; }
+        label { font-weight: 600; display: block; margin-bottom: 4px; font-size: 0.85rem; color: #333; }
+        input, textarea, select { width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 0.95rem; background: white; }
+        .btn { background: #1a4d6b; border: none; padding: 10px 20px; border-radius: 40px; color: white; cursor: pointer; font-weight: 600; margin: 4px 8px 4px 0; font-size: 0.9rem; }
         .btn-success { background: #16a34a; }
         .btn-danger { background: #dc2626; }
         .btn-outline { background: #eef2ff; color: #1a4d6b; border: 1px solid #cbd5e1; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; }
-        th { background: #f1f5f9; }
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 40px; z-index: 999; }
-        .img-preview { max-width: 200px; max-height: 120px; border-radius: 8px; margin-top: 8px; }
-        @media (max-width:600px) { .row { flex-direction: column; } }
-        .badge { display: inline-block; padding: 2px 10px; border-radius: 40px; font-size: 0.75rem; }
-        .badge-green { background: #dcfce7; color: #166534; }
-        .badge-red { background: #fecaca; color: #991b1b; }
+        .btn-sm { padding: 6px 14px; font-size: 0.8rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th, td { padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center; }
+        th { background: #f1f5f9; font-weight: 600; }
+        th .sub { font-weight: 400; font-size: 0.7rem; display: block; color: #666; }
+        .weight-input { width: 60px; padding: 4px; border-radius: 8px; border: 1px solid #cbd5e1; text-align: center; font-size: 0.85rem; }
+        .weight-input:focus { outline: 2px solid #1a4d6b; border-color: transparent; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 40px; z-index: 999; max-width: 90%; text-align: center; }
+        .info-box { background: #e6f7ff; border-left: 4px solid #1a4d6b; padding: 12px 16px; border-radius: 8px; margin-bottom: 12px; font-size: 0.9rem; }
+        .info-box strong { color: #1a4d6b; }
+        .weight-summary { font-size: 0.85rem; color: #666; margin-top: 8px; }
+        .nav-links { margin-top: 20px; padding-top: 16px; border-top: 2px solid #e2e8f0; display: flex; gap: 12px; flex-wrap: wrap; }
+        .nav-links a { text-decoration: none; }
+        .role-tag { display: inline-block; padding: 2px 10px; border-radius: 40px; font-size: 0.75rem; background: #eef2ff; color: #1a4d6b; margin: 2px 4px 2px 0; }
+        .table-wrap { overflow-x: auto; }
+        @media (max-width: 600px) {
+            .row { flex-direction: column; }
+            .tab { padding: 8px 12px; font-size: 0.75rem; }
+            .weight-input { width: 50px; }
+        }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>🔧 完整管理员后台</h1>
-    <p>管理员工、角色、图片、引导语，查看打分进度</p>
+    <h1>🔧 完整管理后台</h1>
+    <p class="subtitle">管理员工名单、角色映射、个性化权重、工作图、引导语、查看打分进度</p>
 
     <div class="tabs">
-        <button class="tab active" data-tab="employees">👥 员工管理</button>
-        <button class="tab" data-tab="roles">🎭 角色映射</button>
+        <button class="tab active" data-tab="employees">👥 员工</button>
+        <button class="tab" data-tab="roles">🎭 角色</button>
+        <button class="tab" data-tab="weights">⚖️ 权重矩阵</button>
         <button class="tab" data-tab="images">🖼️ 工作图</button>
         <button class="tab" data-tab="guide">📝 引导语</button>
-        <button class="tab" data-tab="progress">📋 打分进度</button>
+        <button class="tab" data-tab="progress">📋 进度</button>
         <button class="tab" data-tab="quarter">📅 季度</button>
     </div>
 
-    <!-- 员工管理 -->
+    <!-- ======== 员工管理 ======== -->
     <div id="tab-employees" class="panel active">
         <div class="card">
-            <h3>👥 员工名单</h3>
-            <p>添加或删除被打分人（领导人员不参与被打分）</p>
+            <h3>👥 被打分人名单</h3>
+            <div class="info-box">
+                <strong>📌 已内置默认名单（24人）：</strong> 舒祥、崔坤煜、夏海、王子阳、段炼达、张富明、焦亚克、陈建辉、秦小余、芦莹、郝宇琪、赵利哲、王磊、卢春维、戴磊、王世臣、杨海兵、刘战刚、唐杰、周天阳、彭捷、石国峰、刘世杰、吴优<br>
+                <span style="font-size:0.85rem;color:#666;">💡 领导人员（王金玉、姜涛、刘进军、游钱军、湛云飞、周翔）只打分，不参与被打分</span>
+            </div>
+            <p>如需调整，用逗号分隔修改下方名单</p>
             <div class="row">
                 <div class="col">
-                    <label>当前员工（逗号分隔）</label>
+                    <label>员工名单</label>
                     <input type="text" id="employeeList" placeholder="舒祥,崔坤煜,夏海,...">
                 </div>
             </div>
-            <button id="saveEmployeesBtn" class="btn btn-success">💾 保存员工名单</button>
+            <button id="saveEmployeesBtn" class="btn btn-success">💾 保存</button>
             <button id="resetEmployeesBtn" class="btn btn-outline">🔄 恢复默认</button>
-            <div style="margin-top:12px;">
-                <p><strong>当前员工数：</strong><span id="employeeCount">0</span></p>
-            </div>
+            <div style="margin-top:12px;"><strong>当前员工数：</strong><span id="employeeCount">0</span></div>
         </div>
     </div>
 
-    <!-- 角色映射 -->
+    <!-- ======== 角色映射 ======== -->
     <div id="tab-roles" class="panel">
         <div class="card">
             <h3>🎭 角色映射</h3>
-            <p>格式：姓名:角色，用逗号分隔（如：舒祥:部门负责人,芦莹:员工）</p>
+            <div class="info-box">
+                <strong>📌 已内置角色映射：</strong><br>
+                <strong>部门负责人（12人）：</strong>舒祥、夏海、张富明、陈建辉、秦小余、赵利哲、戴磊、王世臣、杨海兵、唐杰、刘世杰、王子阳<br>
+                <strong>员工（12人）：</strong>芦莹、郝宇琪、王磊、卢春维、段炼达、彭捷、石国峰、崔坤煜、周天阳、刘战刚、吴优<br>
+                <strong>领导人员（6人，只打分不被打分）：</strong>王金玉、姜涛、刘进军、游钱军、湛云飞、周翔
+            </div>
+            <p>格式：姓名:角色，用逗号分隔</p>
             <div class="row">
                 <div class="col">
                     <label>角色映射</label>
                     <input type="text" id="roleMapping" placeholder="舒祥:部门负责人,芦莹:员工,...">
                 </div>
             </div>
-            <button id="saveRolesBtn" class="btn btn-success">💾 保存角色映射</button>
-            <div style="margin-top:12px;">
-                <p><strong>角色列表：</strong></p>
-                <div id="rolePreview"></div>
-            </div>
+            <button id="saveRolesBtn" class="btn btn-success">💾 保存</button>
+            <div style="margin-top:12px;"><strong>当前角色：</strong><span id="rolePreview"></span></div>
         </div>
     </div>
 
-    <!-- 工作图 -->
+    <!-- ======== 权重矩阵（个性化权重） ======== -->
+    <div id="tab-weights" class="panel">
+        <div class="card">
+            <h3>⚖️ 个性化权重矩阵</h3>
+            <div class="info-box">
+                <strong>📌 为每个（打分人 → 被打分人）组合单独设置权重</strong><br>
+                行 = 打分人（评价者），列 = 被打分人（被评价者）<br>
+                如果某单元格留空，系统将使用该打分人角色的默认权重<br>
+                <span style="color:#dc2626;">⚠️ 权重总和建议为 100%（即每个被打分人的所有打分人权重之和 = 1.0）</span>
+            </div>
+            <div id="weightMatrixContainer">
+                <p style="color:gray;">加载权重矩阵中...</p>
+            </div>
+            <button id="saveWeightsBtn" class="btn btn-success">💾 保存权重矩阵</button>
+            <button id="resetWeightsBtn" class="btn btn-outline">🔄 恢复默认（按角色权重）</button>
+        </div>
+    </div>
+
+    <!-- ======== 工作图 ======== -->
     <div id="tab-images" class="panel">
         <div class="card">
             <h3>🖼️ 员工工作完成情况图</h3>
             <p>为每位员工上传一张图片（显示在打分页面中）</p>
-            <div id="imageUploadArea"></div>
+            <div id="imageList"></div>
         </div>
     </div>
 
-    <!-- 引导语 -->
+    <!-- ======== 引导语 ======== -->
     <div id="tab-guide" class="panel">
         <div class="card">
             <h3>📝 打分页面引导语</h3>
@@ -103,29 +141,36 @@
             <div class="row">
                 <div class="col">
                     <label>引导语</label>
-                    <textarea id="guideText" rows="4" style="width:100%;"></textarea>
+                    <textarea id="guideText" rows="4"></textarea>
                 </div>
             </div>
-            <button id="saveGuideBtn" class="btn btn-success">💾 保存引导语</button>
+            <button id="saveGuideBtn" class="btn btn-success">💾 保存</button>
         </div>
     </div>
 
-    <!-- 打分进度 -->
+    <!-- ======== 进度 ======== -->
     <div id="tab-progress" class="panel">
         <div class="card">
-            <h3>📋 打分提交进度</h3>
-            <p>查看哪些员工已提交评分</p>
-            <button id="refreshProgressBtn" class="btn">🔄 刷新进度</button>
-            <div id="progressDisplay" style="margin-top:12px;"></div>
+            <h3>📋 提交进度</h3>
+            <button id="refreshProgressBtn" class="btn">🔄 刷新</button>
+            <div style="margin-top:12px;">
+                <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar" style="width:0%;"></div></div>
+                <div class="progress-list" id="progressList"></div>
+            </div>
         </div>
         <div class="card">
             <h3>📊 考核结果</h3>
-            <button id="calcResultBtn" class="btn btn-success">📐 计算最终结果</button>
+            <div class="info-box">
+                <strong>📌 计算规则已内置：</strong><br>
+                • 维度权重：完成度30%、负荷20%、质量40%、协作10%<br>
+                • 权重来源：优先使用个性化权重矩阵中的值，若无则使用角色默认权重
+            </div>
+            <button id="calcResultBtn" class="btn btn-success">📐 计算</button>
             <div id="resultDisplay" style="margin-top:12px;"></div>
         </div>
     </div>
 
-    <!-- 季度管理 -->
+    <!-- ======== 季度 ======== -->
     <div id="tab-quarter" class="panel">
         <div class="card">
             <h3>📅 季度管理</h3>
@@ -135,26 +180,52 @@
                     <input type="text" id="quarterInput" placeholder="2025年Q3">
                 </div>
             </div>
-            <button id="saveQuarterBtn" class="btn btn-success">💾 保存季度</button>
+            <button id="saveQuarterBtn" class="btn btn-success">💾 保存</button>
         </div>
     </div>
 
-    <div style="margin-top:20px; border-top:2px solid #e2e8f0; padding-top:20px;">
+    <div class="nav-links">
         <a href="./" class="btn btn-outline" style="text-decoration:none;">📊 返回打分页</a>
-        <a href="./admin.html" class="btn btn-outline" style="text-decoration:none;">📈 查看结果</a>
+        <a href="./admin.html" class="btn btn-outline" style="text-decoration:none;">📈 结果看板</a>
     </div>
 </div>
 <script>
-    // ==================== API 基础地址 ====================
-    const API_BASE = '';
+    // ==================== 内置默认配置 ====================
+    const DEFAULT_EMPLOYEES = [
+        "舒祥","崔坤煜","夏海","王子阳","段炼达","张富明",
+        "焦亚克","陈建辉","秦小余","芦莹","郝宇琪","赵利哲",
+        "王磊","卢春维","戴磊","王世臣","杨海兵","刘战刚",
+        "唐杰","周天阳","彭捷","石国峰","刘世杰","吴优"
+    ];
 
-    // ==================== 全局数据 ====================
+    const DEFAULT_ROLE_MAP = {
+        "舒祥":"部门负责人","夏海":"部门负责人","张富明":"部门负责人",
+        "陈建辉":"部门负责人","秦小余":"部门负责人","赵利哲":"部门负责人",
+        "戴磊":"部门负责人","王世臣":"部门负责人","杨海兵":"部门负责人",
+        "唐杰":"部门负责人","刘世杰":"部门负责人","王子阳":"部门负责人",
+        "芦莹":"员工","郝宇琪":"员工","王磊":"员工",
+        "卢春维":"员工","段炼达":"员工","彭捷":"员工",
+        "石国峰":"员工","崔坤煜":"员工","周天阳":"员工",
+        "刘战刚":"员工","吴优":"员工",
+        "王金玉":"领导人员","姜涛":"领导人员","刘进军":"领导人员",
+        "游钱军":"领导人员","湛云飞":"领导人员","周翔":"领导人员"
+    };
+
+    // 角色默认权重（当个性化权重未设置时使用）
+    const DEFAULT_ROLE_WEIGHTS = {
+        "部门负责人": { "主管领导": 0.35, "部门负责人": 0.30, "领导人员": 0.30, "员工": 0.05 },
+        "普通员工": { "部门负责人": 0.30, "领导人员": 0.30, "员工": 0.25, "主管领导": 0.05, "其他负责人": 0.10 }
+    };
+
+    const DEFAULT_GUIDE = "请根据每位同事本季度的工作表现，客观公正地在四个维度上打分。工作完成度满分30分，工作负荷满分20分，工作质量满分40分，团结协作满分10分。感谢您的参与！";
+
     let configData = {
-        employees: [],
-        roleMap: {},
-        guideText: '',
+        employees: [...DEFAULT_EMPLOYEES],
+        roleMap: { ...DEFAULT_ROLE_MAP },
+        guideText: DEFAULT_GUIDE,
         currentQuarter: '2025年Q3',
-        employeeImages: {}
+        employeeImages: {},
+        weightMatrix: {} // { "打分人_被打分人": 权重 }
     };
 
     // ==================== 加载配置 ====================
@@ -163,33 +234,38 @@
             const resp = await fetch('/api/config');
             if (!resp.ok) throw new Error('加载配置失败');
             const data = await resp.json();
-            configData = data;
+            configData.employees = data.employees && data.employees.length ? data.employees : DEFAULT_EMPLOYEES;
+            configData.roleMap = data.roleMap && Object.keys(data.roleMap).length ? data.roleMap : DEFAULT_ROLE_MAP;
+            configData.guideText = data.guideText || DEFAULT_GUIDE;
+            configData.currentQuarter = data.currentQuarter || '2025年Q3';
+            configData.employeeImages = data.employeeImages || {};
+            configData.weightMatrix = data.weightMatrix || {};
             renderAll();
         } catch (err) {
-            showToast('⚠️ 加载配置失败：' + err.message);
+            configData.employees = DEFAULT_EMPLOYEES;
+            configData.roleMap = DEFAULT_ROLE_MAP;
+            configData.guideText = DEFAULT_GUIDE;
+            configData.currentQuarter = '2025年Q3';
+            configData.employeeImages = {};
+            configData.weightMatrix = {};
+            renderAll();
+            showToast('⚠️ 加载配置失败，使用默认配置');
         }
     }
 
     function renderAll() {
-        // 员工列表
         document.getElementById('employeeList').value = (configData.employees || []).join(',');
         document.getElementById('employeeCount').textContent = (configData.employees || []).length;
 
-        // 角色映射
-        const roleStr = Object.entries(configData.roleMap || {}).map(([k,v]) => `${k}:${v}`).join(',');
+        const roleStr = Object.entries(configData.roleMap || {}).map(([k, v]) => `${k}:${v}`).join(',');
         document.getElementById('roleMapping').value = roleStr;
         renderRolePreview();
 
-        // 引导语
         document.getElementById('guideText').value = configData.guideText || '';
-
-        // 季度
         document.getElementById('quarterInput').value = configData.currentQuarter || '2025年Q3';
 
-        // 图片上传区域
-        renderImageUploads();
-
-        // 进度
+        renderImages();
+        renderWeightMatrix();
         loadProgress();
     }
 
@@ -198,44 +274,137 @@
         const map = configData.roleMap || {};
         let html = '';
         for (const [name, role] of Object.entries(map)) {
-            const color = role === '部门负责人' ? 'badge-green' : (role === '领导人员' ? 'badge' : '');
-            html += `<span style="margin-right:12px;">${name} → <strong>${role}</strong></span>`;
+            html += `<span class="role-tag">${name} → ${role}</span>`;
         }
-        container.innerHTML = html || '暂无角色数据';
+        container.innerHTML = html || '暂无数据';
     }
 
-    function renderImageUploads() {
-        const container = document.getElementById('imageUploadArea');
+    // ==================== 权重矩阵 ====================
+    function renderWeightMatrix() {
+        const container = document.getElementById('weightMatrixContainer');
+        const employees = configData.employees || [];
+        const roleMap = configData.roleMap || {};
+        const weightMatrix = configData.weightMatrix || {};
+
+        // 所有打分人 = 所有员工（包括领导人员）
+        const allRaters = Object.keys(roleMap);
+
+        if (employees.length === 0 || allRaters.length === 0) {
+            container.innerHTML = '<p style="color:gray;">请先配置员工和角色</p>';
+            return;
+        }
+
+        let html = `<div class="table-wrap"><table>`;
+        // 表头：第一列是打分人，后面每一列是一个被打分人
+        html += `<thead><tr><th>打分人 ↓</th>`;
+        for (const target of employees) {
+            html += `<th>${target}<span class="sub">${roleMap[target] || ''}</span></th>`;
+        }
+        html += `</tr></thead><tbody>`;
+
+        for (const rater of allRaters) {
+            const raterRole = roleMap[rater] || '员工';
+            html += `<tr><td style="font-weight:600;text-align:left;">${rater}<br><span style="font-size:0.7rem;color:#666;">${raterRole}</span></td>`;
+            for (const target of employees) {
+                const key = `${rater}_${target}`;
+                const value = weightMatrix[key] !== undefined ? weightMatrix[key] : '';
+                // 如果是同一个人，显示“-”且不可编辑
+                if (rater === target) {
+                    html += `<td style="color:#999;">-</td>`;
+                } else {
+                    html += `<td><input type="number" class="weight-input" data-rater="${rater}" data-target="${target}" value="${value}" min="0" max="1" step="0.01" placeholder="默认"></td>`;
+                }
+            }
+            html += `</tr>`;
+        }
+
+        html += `</tbody></table></div>`;
+        html += `<div class="weight-summary">💡 行 = 打分人（评价者），列 = 被打分人（被评价者）。留空使用角色默认权重。</div>`;
+        container.innerHTML = html;
+    }
+
+    // ==================== 保存权重矩阵 ====================
+    async function saveWeightMatrix() {
+        const inputs = document.querySelectorAll('.weight-input');
+        const newMatrix = {};
+        for (const input of inputs) {
+            const rater = input.dataset.rater;
+            const target = input.dataset.target;
+            const val = input.value.trim();
+            if (val !== '' && !isNaN(parseFloat(val))) {
+                newMatrix[`${rater}_${target}`] = parseFloat(val);
+            }
+        }
+        try {
+            const resp = await fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'weightMatrix', value: newMatrix })
+            });
+            if (!resp.ok) throw new Error('保存失败');
+            configData.weightMatrix = newMatrix;
+            showToast('✅ 权重矩阵保存成功');
+            renderWeightMatrix();
+        } catch (err) {
+            showToast('❌ 保存失败：' + err.message);
+        }
+    }
+
+    // ==================== 重置权重矩阵 ====================
+    async function resetWeightMatrix() {
+        if (!confirm('确定要清除所有个性化权重吗？将恢复为角色默认权重。')) return;
+        try {
+            const resp = await fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'weightMatrix', value: {} })
+            });
+            if (!resp.ok) throw new Error('重置失败');
+            configData.weightMatrix = {};
+            showToast('✅ 已重置为角色默认权重');
+            renderWeightMatrix();
+        } catch (err) {
+            showToast('❌ 重置失败：' + err.message);
+        }
+    }
+
+    // ==================== 图片管理 ====================
+    function renderImages() {
+        const container = document.getElementById('imageList');
         const employees = configData.employees || [];
         const images = configData.employeeImages || {};
+        if (employees.length === 0) {
+            container.innerHTML = '<p style="color:gray;">请先添加员工</p>';
+            return;
+        }
         let html = '';
         for (const emp of employees) {
             const hasImage = images[emp];
             html += `
-                <div style="border:1px solid #ddd; border-radius:12px; padding:12px; margin-bottom:12px;">
-                    <strong>${emp}</strong>
-                    <input type="file" accept="image/*" class="img-upload" data-name="${emp}" style="margin-top:8px;">
-                    ${hasImage ? `<img src="${images[emp]}" class="img-preview" style="display:block; margin-top:8px;">` : ''}
-                    ${hasImage ? `<button class="btn btn-danger img-delete" data-name="${emp}" style="margin-top:8px;padding:4px 12px;font-size:0.8rem;">🗑️ 删除</button>` : ''}
+                <div class="image-item" data-name="${emp}">
+                    <span class="name">${emp}</span>
+                    ${hasImage ? `<img src="${images[emp]}" style="max-width:150px;max-height:100px;border-radius:8px;border:1px solid #e2e8f0;">` : '<span style="color:gray;font-size:0.85rem;">暂无图片</span>'}
+                    <div class="actions">
+                        <input type="file" accept="image/*" class="img-upload-input" data-name="${emp}" style="max-width:150px;">
+                        ${hasImage ? `<button class="btn-danger-sm img-delete-btn" data-name="${emp}" style="background:#dc2626;border:none;padding:4px 12px;border-radius:40px;color:white;cursor:pointer;">🗑️ 删除</button>` : ''}
+                    </div>
                 </div>
             `;
         }
-        container.innerHTML = html || '<p style="color:gray;">请先添加员工</p>';
+        container.innerHTML = html;
 
-        // 绑定上传事件
-        document.querySelectorAll('.img-upload').forEach(input => {
+        document.querySelectorAll('.img-upload-input').forEach(input => {
             input.addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 const name = input.getAttribute('data-name');
                 if (!file || !name) return;
                 const reader = new FileReader();
                 reader.onload = async function(ev) {
-                    const base64 = ev.target.result;
                     try {
                         const resp = await fetch('/api/upload-image', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ name, image: base64 })
+                            body: JSON.stringify({ name, image: ev.target.result })
                         });
                         if (!resp.ok) throw new Error('上传失败');
                         showToast('✅ 图片上传成功');
@@ -245,11 +414,11 @@
                     }
                 };
                 reader.readAsDataURL(file);
+                e.target.value = '';
             });
         });
 
-        // 绑定删除事件
-        document.querySelectorAll('.img-delete').forEach(btn => {
+        document.querySelectorAll('.img-delete-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const name = btn.getAttribute('data-name');
                 if (!confirm(`确定删除 ${name} 的图片吗？`)) return;
@@ -269,7 +438,7 @@
         });
     }
 
-    // ==================== 加载进度和结果 ====================
+    // ==================== 进度 ====================
     async function loadProgress() {
         const quarter = configData.currentQuarter || '2025年Q3';
         try {
@@ -277,42 +446,92 @@
             if (!resp.ok) throw new Error('加载进度失败');
             const data = await resp.json();
             const raters = Object.keys(data.data || {});
-            const total = (configData.employees || []).length;
-            const submitted = raters.filter(r => (configData.employees || []).includes(r)).length;
-            document.getElementById('progressDisplay').innerHTML = `
-                <p><strong>已提交：</strong>${submitted} / ${total}</p>
-                <div style="background:#e2e8f0; border-radius:10px; height:10px; width:100%;">
-                    <div style="background:#16a34a; border-radius:10px; height:10px; width:${total > 0 ? (submitted/total*100) : 0}%;"></div>
-                </div>
-                <ul style="max-height:300px; overflow-y:auto; margin-top:12px;">
-                    ${(configData.employees || []).map(emp => {
-                        const done = raters.includes(emp);
-                        return `<li>${emp} : ${done ? '✅ 已提交' : '⏳ 未提交'}</li>`;
-                    }).join('')}
-                </ul>
-            `;
+            const employees = configData.employees || [];
+            const total = employees.length;
+            const submitted = employees.filter(e => raters.includes(e)).length;
+            const pct = total > 0 ? Math.round((submitted / total) * 100) : 0;
+
+            document.getElementById('progressBar').style.width = pct + '%';
+
+            let listHtml = `<div style="margin-bottom:8px;"><strong>已提交：${submitted} / ${total}（${pct}%）</strong></div>`;
+            for (const emp of employees) {
+                const done = raters.includes(emp);
+                listHtml += `<li><span>${emp}</span><span style="color:${done ? '#16a34a' : '#dc2626'};font-weight:600;">${done ? '✅ 已提交' : '⏳ 未提交'}</span></li>`;
+            }
+            document.getElementById('progressList').innerHTML = listHtml;
         } catch (err) {
-            document.getElementById('progressDisplay').innerHTML = '<p style="color:red;">加载进度失败</p>';
+            document.getElementById('progressList').innerHTML = '<li style="color:red;">加载失败</li>';
         }
     }
 
+    // ==================== 结果 ====================
     async function calculateResult() {
         const quarter = configData.currentQuarter || '2025年Q3';
         try {
             const resp = await fetch(`/api/summary/${quarter}`);
             if (!resp.ok) throw new Error('计算失败');
             const data = await resp.json();
-            // 简单展示结果
-            let html = '<table><thead><tr><th>姓名</th><th>角色</th><th>得分</th></tr></thead><tbody>';
             const ratersData = data.data || {};
-            // 这里简单展示，实际计算在后台完成
-            for (const [name, info] of Object.entries(ratersData)) {
-                const ratings = info.ratings || [];
-                const avg = ratings.length > 0 ? (ratings.reduce((s,r) => s + r.composite, 0) / ratings.length) : 0;
-                html += `<tr><td>${name}</td><td>${configData.roleMap[name] || '员工'}</td><td>${avg.toFixed(2)}</td></tr>`;
+            const employees = configData.employees || [];
+            const roleMap = configData.roleMap || {};
+            const weightMatrix = configData.weightMatrix || {};
+
+            const targetMap = new Map();
+            const DIM_WEIGHTS = { complete: 0.3, load: 0.2, quality: 0.4, coop: 0.1 };
+
+            function getRole(p) { return roleMap[p] || "员工"; }
+
+            // 获取个性化权重或角色默认权重
+            function getWeight(target, rater) {
+                const key = `${rater}_${target}`;
+                // 优先使用个性化权重
+                if (weightMatrix[key] !== undefined && weightMatrix[key] !== null && weightMatrix[key] !== '') {
+                    return parseFloat(weightMatrix[key]);
+                }
+                // 否则使用角色默认权重
+                const targetRole = getRole(target);
+                const raterRole = getRole(rater);
+                const matrix = DEFAULT_ROLE_WEIGHTS[targetRole === "部门负责人" ? "部门负责人" : "普通员工"];
+                if (!matrix) return 0.1;
+                if (raterRole === "主管领导") return matrix["主管领导"] || 0.05;
+                if (raterRole === "部门负责人") return matrix["部门负责人"] || 0.3;
+                if (raterRole === "领导人员") return matrix["领导人员"] || 0.3;
+                if (raterRole === "员工") return matrix["员工"] || 0.25;
+                return matrix["其他负责人"] || 0.1;
             }
-            html += '</tbody></table>';
-            document.getElementById('resultDisplay').innerHTML = html || '暂无数据';
+
+            for (const [rater, info] of Object.entries(ratersData)) {
+                const ratings = info.ratings || [];
+                for (const r of ratings) {
+                    const weight = getWeight(r.target, rater);
+                    const weightedScore = r.composite * weight;
+                    if (!targetMap.has(r.target)) targetMap.set(r.target, { sum: 0, totalWeight: 0 });
+                    const rec = targetMap.get(r.target);
+                    rec.sum += weightedScore;
+                    rec.totalWeight += weight;
+                }
+            }
+
+            let results = [];
+            for (const emp of employees) {
+                const rec = targetMap.get(emp);
+                let score = rec ? (rec.totalWeight > 0 ? rec.sum / rec.totalWeight : 0) : 0;
+                score = Math.round(score * 100) / 100;
+                const grade = score >= 90 ? 'A' : (score >= 75 ? 'B' : (score >= 60 ? 'C' : 'D'));
+                results.push({ name: emp, role: getRole(emp), score, grade });
+            }
+            results.sort((a, b) => b.score - a.score);
+
+            let html = `<table><thead><tr><th>排名</th><th>姓名</th><th>角色</th><th>得分</th><th>等级</th></tr></thead><tbody>`;
+            if (results.every(r => r.score === 0)) {
+                html += `<tr><td colspan="5" style="text-align:center;color:gray;">暂无评分数据</td></tr>`;
+            } else {
+                results.forEach((r, idx) => {
+                    html += `<tr><td>${idx + 1}</td><td>${r.name}</td><td>${r.role}</td><td><strong>${r.score.toFixed(2)}</strong></td><td><span style="background:#eef2ff;padding:2px 10px;border-radius:40px;">${r.grade}级</span></td></tr>`;
+                });
+            }
+            html += `</tbody></table>`;
+            document.getElementById('resultDisplay').innerHTML = html;
         } catch (err) {
             document.getElementById('resultDisplay').innerHTML = '<p style="color:red;">计算失败</p>';
         }
@@ -328,7 +547,7 @@
             });
             if (!resp.ok) throw new Error('保存失败');
             showToast('✅ 保存成功');
-            loadConfig();
+            await loadConfig();
         } catch (err) {
             showToast('❌ 保存失败：' + err.message);
         }
@@ -345,13 +564,16 @@
         setTimeout(() => t.remove(), 3000);
     }
 
-    // ==================== Tab 切换 ====================
+    // ==================== Tab切换 ====================
     document.querySelectorAll('.tab').forEach(tab => {
         tab.addEventListener('click', () => {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
             document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            if (tab.dataset.tab === 'progress') { loadProgress(); }
+            if (tab.dataset.tab === 'images') { renderImages(); }
+            if (tab.dataset.tab === 'weights') { renderWeightMatrix(); }
         });
     });
 
@@ -363,8 +585,7 @@
     });
 
     document.getElementById('resetEmployeesBtn').addEventListener('click', () => {
-        const defaultEmps = ["舒祥", "崔坤煜", "夏海", "王子阳", "段炼达", "张富明", "焦亚克", "陈建辉", "秦小余", "芦莹", "郝宇琪", "赵利哲", "王磊", "卢春维", "戴磊", "王世臣", "杨海兵", "刘战刚", "唐杰", "周天阳", "彭捷", "石国峰", "刘世杰", "吴优"];
-        saveConfig('employees', defaultEmps);
+        saveConfig('employees', DEFAULT_EMPLOYEES);
     });
 
     document.getElementById('saveRolesBtn').addEventListener('click', () => {
@@ -377,9 +598,11 @@
         saveConfig('roleMap', obj);
     });
 
+    document.getElementById('saveWeightsBtn').addEventListener('click', saveWeightMatrix);
+    document.getElementById('resetWeightsBtn').addEventListener('click', resetWeightMatrix);
+
     document.getElementById('saveGuideBtn').addEventListener('click', () => {
-        const val = document.getElementById('guideText').value;
-        saveConfig('guideText', val);
+        saveConfig('guideText', document.getElementById('guideText').value);
     });
 
     document.getElementById('saveQuarterBtn').addEventListener('click', () => {
