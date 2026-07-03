@@ -8,7 +8,6 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
-const path = require('path');
 app.use(express.static(path.join(__dirname, 'public')));
 
 const DATA_DIR = path.join(__dirname, 'data');
@@ -57,6 +56,7 @@ app.get('/api/summary/:quarter', (req, res) => {
     });
 });
 
+// 根路径返回打分页面
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
