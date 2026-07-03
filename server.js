@@ -103,3 +103,42 @@ app.get('/health', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ 服务器运行在端口 ${PORT}`);
 });
+// ============ 配置管理 API ============
+let configCache = {
+    employees: [],
+    roleMap: {},
+    guideText: '',
+    currentQuarter: '2025年Q3'
+};
+
+function loadConfig() {
+    try {
+        const data = readData();
+        if (data._config) {
+            configCache = data._config;
+        }
+    } catch(e) {}
+    return configCache;
+}
+
+function saveConfigToFile(config) {
+    const allData = readData();
+    allData._config = config;
+    writeData(allData);
+}
+
+app.get('/api/config', (req, res) => {
+    res.json(loadConfig());
+});
+
+app.post('/api/config', (req, res) => {
+    try {
+        const { type, value } = req.body;
+        const config = loadConfig();
+        config[type] = value;
+        saveConfigToFile(config);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
